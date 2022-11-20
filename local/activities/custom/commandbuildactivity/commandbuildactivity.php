@@ -3,16 +3,19 @@ if (!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED !== true) die();
 
 class CBPCommandBuildActivity extends CBPActivity
 {
+    const CODE_USERS = 'users';
+
     public function __construct($name)
     {
         parent::__construct($name);
-        $this->arProperties = array("Title" => "", "ExecuteCode" => "");
+        $this->arProperties = array("Title" => "", static::CODE_USERS => "");
     }
 
     public function Execute()
     {
-        if ($this->ExecuteCode <> '')
-            @eval($this->ExecuteCode);
+        $rootActivity = $this->GetRootActivity();
+        $documentId = $rootActivity->GetDocumentId();
+        $users = array_unique(CBPHelper::ExtractUsers($this->users, $documentId, false));
 
         return CBPActivityExecutionStatus::Closed;
     }
@@ -28,13 +31,6 @@ class CBPCommandBuildActivity extends CBPActivity
             );
         }
 
-        if ($arTestProperties["ExecuteCode"] == '') {
-            $arErrors[] = array(
-                "code" => "emptyCode",
-                "message" => GetMessage("BPCA_EMPTY_CODE"),
-            );
-        }
-
         return array_merge($arErrors, parent::ValidateProperties($arTestProperties, $user));
     }
 
@@ -42,17 +38,14 @@ class CBPCommandBuildActivity extends CBPActivity
     {
         $runtime = CBPRuntime::GetRuntime();
 
-        if (!is_array($arWorkflowParameters))
-            $arWorkflowParameters = array();
-        if (!is_array($arWorkflowVariables))
-            $arWorkflowVariables = array();
-
         if (!is_array($arCurrentValues)) {
-            $arCurrentValues = array("execute_code" => "");
+            $arCurrentValues = array(static::CODE_USERS => "");
 
             $arCurrentActivity = &CBPWorkflowTemplateLoader::FindActivityByName($arWorkflowTemplate, $activityName);
-            if (is_array($arCurrentActivity["Properties"]))
-                $arCurrentValues["execute_code"] = $arCurrentActivity["Properties"]["ExecuteCode"];
+            if (is_array($arCurrentActivity["Properties"])) {
+                $arCurrentValues[static::CODE_USERS] = CBPHelper::UsersArrayToString($arCurrentActivity["Properties"][static::CODE_USERS],
+                    $arWorkflowTemplate, $documentType);
+            }
         }
 
         return $runtime->ExecuteResourceFile(
@@ -69,9 +62,12 @@ class CBPCommandBuildActivity extends CBPActivity
     {
         $arErrors = array();
 
-        $runtime = CBPRuntime::GetRuntime();
-
-        $arProperties = array("ExecuteCode" => $arCurrentValues["execute_code"]);
+        $arProperties = array(static::CODE_USERS =>
+            CBPHelper::UsersStringToArray(
+                $arCurrentValues[static::CODE_USERS],
+                $documentType,
+                $errors
+            ));
 
         $arErrors = self::ValidateProperties($arProperties, new CBPWorkflowTemplateUser(CBPWorkflowTemplateUser::CurrentUser));
         if (count($arErrors) > 0)
