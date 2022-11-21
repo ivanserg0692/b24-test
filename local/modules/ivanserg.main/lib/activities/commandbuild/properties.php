@@ -8,7 +8,7 @@ class Properties
 {
     const PROPERTY_USERS = 'users';
     const PROPERTY_TASK_ID = 'taskId';
-    const PROPERTY_NAME = 'name';
+    const PROPERTY_NAME = 'assignmentName';
     const PROPERTY_DESCRIPTION = 'description';
 
     protected array $arValues;
@@ -47,7 +47,6 @@ class Properties
     {
         return [
             static::PROPERTY_USERS,
-            static::PROPERTY_TASK_ID,
             static::PROPERTY_NAME,
             static::PROPERTY_DESCRIPTION];
     }

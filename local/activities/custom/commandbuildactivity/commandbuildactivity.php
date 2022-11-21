@@ -10,18 +10,28 @@ class CBPCommandBuildActivity extends CBPActivity
     implements IBPEventActivity, IBPActivityExternalEventListener
 {
 
-    const CODE_ACTIVITY = 'CommandBuild';
+    const CODE_ACTIVITY = 'CommandBuildActivity';
 
-
-    protected static array $arRequiredFields;
     protected Properties $obProperties;
 
     protected function getArUsersIds(): array
     {
         $rootActivity = $this->GetRootActivity();
         $documentId = $rootActivity->GetDocumentId();
-        return array_unique(CBPHelper::ExtractUsers($this->users, $documentId, false));
+        return CBPHelper::ExtractUsers($this->users, $documentId, false);
     }
+
+    public function __unserialize(array $arProperties): void
+    {
+        foreach ($arProperties as $sKey => $arProperty) {
+            if (($sKey === 'obProperties')) {
+                $this->obProperties = new Properties;
+                continue;
+            }
+            $this->{$sKey} = $arProperty;
+        }
+    }
+
 
     public function __construct($name)
     {
@@ -34,8 +44,9 @@ class CBPCommandBuildActivity extends CBPActivity
 
     public function Execute()
     {
-
-        return CBPActivityExecutionStatus::Closed;
+        $this->Subscribe($this);
+        $this->writeToTrackingService('Подписка выполнена');
+        return CBPActivityExecutionStatus::Executing;
     }
 
     public static function ValidateProperties($arTestProperties = array(), CBPWorkflowTemplateUser $user = null)
@@ -139,6 +150,7 @@ class CBPCommandBuildActivity extends CBPActivity
 
         /** @var CBPTaskService $taskService */
         $taskService = $this->workflow->GetService("TaskService");
+        $this->writeToTrackingService(var_export($this->getArUsersIds(), true));
         $this->taskId = $taskService->CreateTask(
             array(
                 "USERS" => $this->getArUsersIds(),
@@ -146,7 +158,7 @@ class CBPCommandBuildActivity extends CBPActivity
                 "ACTIVITY" => static::CODE_ACTIVITY,
                 "ACTIVITY_NAME" => $this->name,
 //                "OVERDUE_DATE" => $overdueDate,
-                "NAME" => $this->Name,
+                "NAME" => $this->assignmentName,
                 "DESCRIPTION" => $this->Description,
                 "PARAMETERS" => [],
                 'IS_INLINE' => 'N',
@@ -160,6 +172,14 @@ class CBPCommandBuildActivity extends CBPActivity
     public function Unsubscribe(IBPActivityExternalEventListener $eventHandler)
     {
 
+        $taskService = $this->workflow->GetService("TaskService");
+        if ($this->taskStatus === false) {
+            $taskService->DeleteTask($this->taskId);
+        } else {
+            $taskService->Update($this->taskId, array(
+                'STATUS' => $this->taskStatus
+            ));
+        }
         $this->workflow->RemoveEventHandler($this->name, $eventHandler);
     }
 
@@ -175,8 +195,21 @@ class CBPCommandBuildActivity extends CBPActivity
 
     public static function ShowTaskForm($arTask, $userId, $userName = "")
     {
-        $form = '';
-        $buttons = '';
+        $runtime = CBPRuntime::GetRuntime();
+        $form = $runtime->ExecuteResourceFile(
+            __FILE__,
+            "task_form.php",
+            array(
+                "arResult" => $arTask['PARAMETERS'],
+            )
+        );
+        $buttons = $runtime->ExecuteResourceFile(
+            __FILE__,
+            "task_buttons.php",
+            array(
+                "arResult" => $arTask['PARAMETERS'],
+            )
+        );;
 
         return array($form, $buttons);
     }
