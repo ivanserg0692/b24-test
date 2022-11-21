@@ -11,9 +11,45 @@ class Properties
     const PROPERTY_NAME = 'name';
     const PROPERTY_DESCRIPTION = 'description';
 
-    public function getRequiredKeys():array
+    protected array $arValues;
+    protected array $arErrors;
+
+    public function __construct()
     {
-        return RequiredProperties::getArFieldKeys();
+        $this->arErrors = [];
+    }
+
+    public function setArValues(array &$arValues)
+    {
+        $this->arValues = $arValues;
+    }
+
+    public function valid(): void
+    {
+        $this->arErrors = [];
+        foreach ($this->getRequiredKeys() as $sKey) {
+            if (!$this->arValues[$sKey]) {
+                $this->arErrors[] = [
+                    'code' => 'required_input',
+                    'message' => 'Заполните обязательное поле ' . $sKey
+                ];
+            }
+        }
+    }
+
+    public function getArrErrors(): array
+    {
+        return $this->arErrors;
+    }
+
+
+    protected function getRequiredKeys(): array
+    {
+        return [
+            static::PROPERTY_USERS,
+            static::PROPERTY_TASK_ID,
+            static::PROPERTY_NAME,
+            static::PROPERTY_DESCRIPTION];
     }
 
     public function getArList(): array
