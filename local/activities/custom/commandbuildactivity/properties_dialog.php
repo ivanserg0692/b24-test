@@ -9,18 +9,18 @@ use \Ivanserg\Main\Activities\CommandBuild\Properties;
 <tr>
 	<td align="right" width="40%" valign="top"><span class="adm-required-field">Выборка пользователей:</span></td>
 	<td width="60%">
-		<?=CBPDocument::ShowParameterField('user', Properties::PROPERTY_USERS, $arCurrentValues['users'], array('rows' => 1, 'cols' => 70))?>
+		<?=CBPDocument::ShowParameterField('user', Properties::PROPERTY_USERS, $arCurrentValues[Properties::PROPERTY_USERS], array('rows' => 1, 'cols' => 70))?>
 	</td>
 </tr>
 <tr>
     <td align="right" width="40%" valign="top"><span class="adm-required-field">Название задания:</span></td>
     <td width="60%">
-        <?=CBPDocument::ShowParameterField('string', Properties::PROPERTY_NAME, $arCurrentValues['name'], array('rows' => 1, 'cols' => 70))?>
+        <?=CBPDocument::ShowParameterField('string', Properties::PROPERTY_NAME, $arCurrentValues[Properties::PROPERTY_NAME], array('rows' => 1, 'cols' => 70))?>
     </td>
 </tr>
 <tr>
     <td align="right" width="40%" valign="top"><span class="adm-required-field">Описание задания:</span></td>
     <td width="60%">
-        <?=CBPDocument::ShowParameterField('string', Properties::PROPERTY_DESCRIPTION, $arCurrentValues['description'], array('rows' => 10, 'cols' => 70))?>
+        <?=CBPDocument::ShowParameterField('string', Properties::PROPERTY_DESCRIPTION, $arCurrentValues[Properties::PROPERTY_DESCRIPTION], array('rows' => 10, 'cols' => 70))?>
     </td>
 </tr>

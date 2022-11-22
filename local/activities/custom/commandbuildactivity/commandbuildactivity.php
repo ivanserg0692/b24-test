@@ -26,6 +26,7 @@ class CBPCommandBuildActivity extends CBPActivity
         foreach ($arProperties as $sKey => $arProperty) {
             if (($sKey === 'obProperties')) {
                 $this->obProperties = new Properties;
+                $this->obProperties->setArValuesByActivity($this);
                 continue;
             }
             $this->{$sKey} = $arProperty;
@@ -44,6 +45,7 @@ class CBPCommandBuildActivity extends CBPActivity
 
     public function Execute()
     {
+        $this->obProperties->setArValuesByActivity($this);
         $this->Subscribe($this);
         $this->writeToTrackingService('Подписка выполнена');
         return CBPActivityExecutionStatus::Executing;
@@ -160,7 +162,7 @@ class CBPCommandBuildActivity extends CBPActivity
 //                "OVERDUE_DATE" => $overdueDate,
                 "NAME" => $this->assignmentName,
                 "DESCRIPTION" => $this->Description,
-                "PARAMETERS" => [],
+                "PARAMETERS" => $this->obProperties->getArValues(),
                 'IS_INLINE' => 'N',
 //                'DELEGATION_TYPE' => (int)$this->DelegationType,
                 'DOCUMENT_NAME' => $documentService->GetDocumentName($documentId)

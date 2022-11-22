@@ -17,11 +17,25 @@ class Properties
     public function __construct()
     {
         $this->arErrors = [];
+        $this->arValues = [];
     }
 
-    public function setArValues(array &$arValues)
+    public function setArValuesByActivity(\CBPCommandBuildActivity $obActivity): void
+    {
+        $this->arValues = [];
+        foreach (array_keys($this->getArList()) as $sPropertyKey) {
+            $this->arValues[$sPropertyKey] = $obActivity->{$sPropertyKey};
+        }
+    }
+
+    public function setArValues(array &$arValues): void
     {
         $this->arValues = $arValues;
+    }
+
+    public function getArValues(): array
+    {
+        return $this->arValues;
     }
 
     public function valid(): void
