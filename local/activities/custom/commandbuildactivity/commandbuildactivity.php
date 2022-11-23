@@ -188,7 +188,7 @@ class CBPCommandBuildActivity extends CBPActivity
     public function OnExternalEvent($arEventParameters = array())
     {
         $this->taskStatus = CBPTaskStatus::CompleteYes;
-        $this->writeToTrackingService('event ' . var_export($this->taskId, true));
+        $this->writeToTrackingService('Пользователь ознакомлен');
         $taskService = $this->workflow->GetService("TaskService");
         $taskService->MarkCompleted($this->taskId, $arEventParameters["REAL_USER_ID"], CBPTaskStatus::CompleteYes);
     }
