@@ -21,18 +21,16 @@ class CBPCommandBuildActivity extends CBPActivity
         return CBPHelper::ExtractUsers($this->users, $documentId, false);
     }
 
-    public function __unserialize(array $arProperties): void
+    public function __sleep(): array
     {
-        foreach ($arProperties as $sKey => $arProperty) {
-            if (($sKey === 'obProperties')) {
-                $this->obProperties = new Properties;
-                $this->obProperties->setArValuesByActivity($this);
-                continue;
-            }
-            $this->{$sKey} = $arProperty;
-        }
+        return array_diff(array_keys(get_object_vars($this)), ['obProperties']);
     }
 
+    public function __wakeup(): void
+    {
+        $this->obProperties = new Properties;
+        $this->obProperties->setArValuesByActivity($this);
+    }
 
     public function __construct($name)
     {
@@ -47,7 +45,7 @@ class CBPCommandBuildActivity extends CBPActivity
     {
         $this->obProperties->setArValuesByActivity($this);
         $this->Subscribe($this);
-        $this->writeToTrackingService('Подписка выполнена');
+        $this->writeToTrackingService('Подписка выполнена ' . $this->name);
         return CBPActivityExecutionStatus::Executing;
     }
 
@@ -125,8 +123,9 @@ class CBPCommandBuildActivity extends CBPActivity
         return true;
     }
 
-    public function cancel()
+    public function Cancel()
     {
+        $this->writeToTrackingService('Задача отменена ' . $this->name);
         if ($this->taskId > 0) {
             $this->Unsubscribe($this);
         }
@@ -134,13 +133,13 @@ class CBPCommandBuildActivity extends CBPActivity
         return CBPActivityExecutionStatus::Closed;
     }
 
-    public function handleFault(Exception $exception)
+    public function HandleFault(Exception $exception)
     {
         $status = $this->cancel();
         if ($status == CBPActivityExecutionStatus::Canceling) {
             return CBPActivityExecutionStatus::Faulting;
         }
-        return parent::handleFault($exception);
+        return parent::HandleFault($exception);
     }
 
     public function Subscribe(IBPActivityExternalEventListener $eventHandler)
@@ -174,6 +173,7 @@ class CBPCommandBuildActivity extends CBPActivity
     public function Unsubscribe(IBPActivityExternalEventListener $eventHandler)
     {
 
+        $this->writeToTrackingService('Отписка ' . $this->name);
         $taskService = $this->workflow->GetService("TaskService");
         if ($this->taskStatus === false) {
             $taskService->DeleteTask($this->taskId);
@@ -187,12 +187,20 @@ class CBPCommandBuildActivity extends CBPActivity
 
     public function OnExternalEvent($arEventParameters = array())
     {
-
+        $this->taskStatus = CBPTaskStatus::CompleteYes;
+        $this->writeToTrackingService('event ' . var_export($this->taskId, true));
+        $taskService = $this->workflow->GetService("TaskService");
+        $taskService->MarkCompleted($this->taskId, $arEventParameters["REAL_USER_ID"], CBPTaskStatus::CompleteYes);
     }
 
     public static function PostTaskForm($arTask, $userId, $arRequest, &$arErrors, $userName = "", $realUserId = null)
     {
-
+        CBPRuntime::SendExternalEvent($arTask["WORKFLOW_ID"], $arTask["ACTIVITY_NAME"], [
+            "USER_ID" => $userId,
+            "REAL_USER_ID" => $realUserId,
+            "USER_NAME" => $userName,
+        ]);
+        return true;
     }
 
     public static function ShowTaskForm($arTask, $userId, $userName = "")
