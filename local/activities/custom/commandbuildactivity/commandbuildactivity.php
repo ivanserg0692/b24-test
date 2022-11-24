@@ -13,7 +13,7 @@ class CBPCommandBuildActivity extends CBPActivity
     const CODE_ACTIVITY = 'CommandBuildActivity';
 
     protected Properties $obProperties;
-    protected int $taskId;
+    protected int $taskId = 0;
 
     protected function getArUsersIds(): array
     {
