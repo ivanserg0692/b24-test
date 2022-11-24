@@ -13,6 +13,7 @@ class CBPCommandBuildActivity extends CBPActivity
     const CODE_ACTIVITY = 'CommandBuildActivity';
 
     protected Properties $obProperties;
+    protected int $taskId;
 
     protected function getArUsersIds(): array
     {
@@ -45,7 +46,6 @@ class CBPCommandBuildActivity extends CBPActivity
     {
         $this->obProperties->setArValuesByActivity($this);
         $this->Subscribe($this);
-        $this->writeToTrackingService('Подписка выполнена ' . $this->name);
         return CBPActivityExecutionStatus::Executing;
     }
 
@@ -76,12 +76,10 @@ class CBPCommandBuildActivity extends CBPActivity
             $arCurrentActivity = &CBPWorkflowTemplateLoader::FindActivityByName($arWorkflowTemplate, $activityName);
 
             if (is_array($arCurrentActivity["Properties"])) {
-                $arCurrentValues[Properties::PROPERTY_USERS] = CBPHelper::UsersArrayToString(
-                    $arCurrentActivity["Properties"][Properties::PROPERTY_USERS],
-                    $arWorkflowTemplate, $documentType
-                );
-                $arCurrentValues[Properties::PROPERTY_NAME] = $arCurrentActivity["Properties"][Properties::PROPERTY_NAME];
-                $arCurrentValues[Properties::PROPERTY_DESCRIPTION] = $arCurrentActivity["Properties"][Properties::PROPERTY_DESCRIPTION];
+                $obProperties = new Properties;
+                $obProperties->setArValues($arCurrentActivity["Properties"]);
+                $obProperties->processForShowingDialog($documentType, $arWorkflowTemplate);
+                $arCurrentValues = $obProperties->getArValues() + $arCurrentValues;
             }
         }
 
@@ -101,19 +99,14 @@ class CBPCommandBuildActivity extends CBPActivity
     {
         $arErrors = array();
 
-        $arProperties = array(
-            Properties::PROPERTY_USERS =>
-                CBPHelper::UsersStringToArray(
-                    $arCurrentValues[Properties::PROPERTY_USERS],
-                    $documentType,
-                    $errors
-                ),
-            Properties::PROPERTY_NAME => $arCurrentValues[Properties::PROPERTY_NAME],
-            Properties::PROPERTY_DESCRIPTION => $arCurrentValues[Properties::PROPERTY_DESCRIPTION]
-        );
+        $obProperties = new Properties();
+        $obProperties->setArValues($arCurrentValues);
+        $obProperties->processForSavingDialog($documentType);
+        $arProperties = $obProperties->getArValues();
 
 
         $arErrors = self::ValidateProperties($arProperties, new CBPWorkflowTemplateUser(CBPWorkflowTemplateUser::CurrentUser));
+        $arErrors = array_merge($arErrors, $obProperties->getArrErrors());
         if (count($arErrors) > 0)
             return false;
 
@@ -167,6 +160,7 @@ class CBPCommandBuildActivity extends CBPActivity
                 'DOCUMENT_NAME' => $documentService->GetDocumentName($documentId)
             )
         );
+        $this->writeToTrackingService('Создана задача ' . $this->taskId);
         $this->workflow->AddEventHandler($this->name, $eventHandler);
     }
 

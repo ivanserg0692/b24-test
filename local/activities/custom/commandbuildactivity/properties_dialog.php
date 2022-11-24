@@ -24,3 +24,15 @@ use \Ivanserg\Main\Activities\CommandBuild\Properties;
         <?=CBPDocument::ShowParameterField('string', Properties::PROPERTY_DESCRIPTION, $arCurrentValues[Properties::PROPERTY_DESCRIPTION], array('rows' => 10, 'cols' => 70))?>
     </td>
 </tr>
+<tr>
+    <td align="right" width="40%" valign="top"><span class="adm-required-field">Минимальное число необходимых сотрудников:</span></td>
+    <td width="60%">
+        <?=CBPDocument::ShowParameterField('string', Properties::PROPERTY_REQUIRED_STAFF_COUNT, $arCurrentValues[Properties::PROPERTY_REQUIRED_STAFF_COUNT], array('rows' => 1, 'cols' => 70))?>
+    </td>
+</tr>
+<tr>
+    <td align="right" width="40%" valign="top"><span class="adm-required-field">Руководители, которые могут стопорить таску:</span></td>
+    <td width="60%">
+        <?=CBPDocument::ShowParameterField('user', Properties::PROPERTY_BOSSES, $arCurrentValues[Properties::PROPERTY_BOSSES], array('rows' => 1, 'cols' => 70))?>
+    </td>
+</tr>
