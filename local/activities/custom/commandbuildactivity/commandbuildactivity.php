@@ -15,11 +15,20 @@ class CBPCommandBuildActivity extends CBPActivity
     protected Properties $obProperties;
     protected int $taskId = 0;
 
+
     protected function getArUsersIds(): array
     {
-        $rootActivity = $this->GetRootActivity();
-        $documentId = $rootActivity->GetDocumentId();
-        return CBPHelper::ExtractUsers($this->users, $documentId, false);
+        return array_unique(array_merge($this->getArStaffIds(), $this->getArBossIds()));
+    }
+
+    protected function getArBossIds(): array
+    {
+        return $this->obProperties->{Properties::PROPERTY_BOSSES};
+    }
+
+    protected function getArStaffIds(): array
+    {
+        return $this->obProperties->{Properties::PROPERTY_USERS};
     }
 
     public function __sleep(): array
@@ -145,6 +154,7 @@ class CBPCommandBuildActivity extends CBPActivity
         /** @var CBPTaskService $taskService */
         $taskService = $this->workflow->GetService("TaskService");
         $this->writeToTrackingService(var_export($this->getArUsersIds(), true));
+        $this->obProperties->proccessForTask($documentId);
         $this->taskId = $taskService->CreateTask(
             array(
                 "USERS" => $this->getArUsersIds(),

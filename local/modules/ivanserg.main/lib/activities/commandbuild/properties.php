@@ -15,6 +15,7 @@ class Properties
     protected array $arValues;
     protected array $arErrors;
     protected array $arUserPropertyKeys;
+    protected bool $isProcessedForTask = false;
 
     public function __construct()
     {
@@ -48,6 +49,10 @@ class Properties
      */
     public function processForSavingDialog($documentType): void
     {
+        if($this->isProcessedForTask) {
+            return;
+        }
+        $this->isProcessedForTask = true;
         foreach ($this->arValues as $sKey => $arValue) {
             if (in_array($sKey, $this->arUserPropertyKeys)) {
                 $arValue = \CBPHelper::UsersStringToArray(
@@ -78,6 +83,40 @@ class Properties
             $this->arValues[$sKey] = $arValue;
         }
 
+    }
+
+    /**
+     * this operation is irreversible
+     * @param $documentId
+     * @return void
+     */
+    public function proccessForTask($documentId)
+    {
+        foreach ($this->arValues as $sKey => $arValue) {
+            if (in_array($sKey, $this->arUserPropertyKeys)) {
+                $arValue = \CBPHelper::ExtractUsers($arValue, $documentId, false);
+            }
+            $this->arValues[$sKey] = $arValue;
+        }
+    }
+
+    public function getArUserIdsByPropertyKey(string $name, $documentId)
+    {
+        $obProperties = ($this->isProcessedForTask)? $this : clone $this;
+        $obProperties->proccessForTask($documentId);
+        return $obProperties->{$name};
+    }
+
+    /**
+     * @param string $name
+     * @return mixed|null
+     */
+    public function __get(string $name)
+    {
+        if(!isset($this->arValues[$name])) {
+            return null;
+        }
+        return $this->arValues[$name];
     }
 
 
