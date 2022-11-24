@@ -14,6 +14,8 @@ class CBPCommandBuildActivity extends CBPActivity
 
     protected Properties $obProperties;
     protected int $taskId = 0;
+    protected array $arUserStaffIds;
+    protected array $arUserBossIds;
 
 
     protected function getArUsersIds(): array
@@ -23,12 +25,24 @@ class CBPCommandBuildActivity extends CBPActivity
 
     protected function getArBossIds(): array
     {
-        return $this->obProperties->{Properties::PROPERTY_BOSSES};
+        if(!isset($this->arUserBossIds)) {
+            $rootActivity = $this->GetRootActivity();
+            $documentId = $rootActivity->GetDocumentId();
+            $this->arUserBossIds = $this->obProperties
+                ->getArUserIdsByPropertyKey(Properties::PROPERTY_BOSSES, $documentId);
+        }
+        return $this->arUserBossIds;
     }
 
     protected function getArStaffIds(): array
     {
-        return $this->obProperties->{Properties::PROPERTY_USERS};
+        if(!isset($this->arUserStaffIds)) {
+            $rootActivity = $this->GetRootActivity();
+            $documentId = $rootActivity->GetDocumentId();
+            $this->arUserStaffIds = $this->obProperties
+                ->getArUserIdsByPropertyKey(Properties::PROPERTY_BOSSES, $documentId);
+        }
+        return $this->arUserStaffIds;
     }
 
     public function __sleep(): array
@@ -191,10 +205,39 @@ class CBPCommandBuildActivity extends CBPActivity
 
     public function OnExternalEvent($arEventParameters = array())
     {
+        global $USER;
         $this->taskStatus = CBPTaskStatus::CompleteYes;
         $this->writeToTrackingService('Пользователь ознакомлен');
-        $taskService = $this->workflow->GetService("TaskService");
-        $taskService->MarkCompleted($this->taskId, $arEventParameters["REAL_USER_ID"], CBPTaskStatus::CompleteYes);
+        $userId = $USER->GetID();
+        $isBoss = in_array($userId, $this->getArBossIds());
+        $isStaff = in_array($userId, $this->getArStaffIds());
+        if(!$isBoss && $isStaff) {
+            //just a staff
+            $this->onWilParticipate($arEventParameters);
+            $taskService = $this->workflow->GetService("TaskService");
+            $taskService->MarkCompleted($this->taskId, $arEventParameters["REAL_USER_ID"], CBPTaskStatus::CompleteYes);
+        } elseif($isBoss && $isStaff) {
+            //staff and boss
+            if($arEventParameters['WILL_PARTICIPATE']) {
+                $this->onWilParticipate($arEventParameters);
+            }
+            if($arEventParameters['STOP']) {
+                $this->onStop($arEventParameters);
+            }
+        } else {
+            //just a boss
+            $this->onStop($arEventParameters);
+        }
+    }
+
+    protected function onWilParticipate($arEventParameters = array())
+    {
+        $this->writeToTrackingService("Событие буду участвовать");
+    }
+
+    protected function onStop($arEventParameters = array())
+    {
+        $this->writeToTrackingService("Событие остановки");
     }
 
     public static function PostTaskForm($arTask, $userId, $arRequest, &$arErrors, $userName = "", $realUserId = null)
@@ -203,6 +246,8 @@ class CBPCommandBuildActivity extends CBPActivity
             "USER_ID" => $userId,
             "REAL_USER_ID" => $realUserId,
             "USER_NAME" => $userName,
+            "STOP" => boolval($arRequest['stop']),
+            "WILL_PARTICIPATE" => boolval($arRequest['will-participate']),
         ]);
         return true;
     }
