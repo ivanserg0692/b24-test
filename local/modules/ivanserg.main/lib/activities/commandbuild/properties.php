@@ -49,10 +49,6 @@ class Properties
      */
     public function processForSavingDialog($documentType): void
     {
-        if($this->isProcessedForTask) {
-            return;
-        }
-        $this->isProcessedForTask = true;
         foreach ($this->arValues as $sKey => $arValue) {
             if (in_array($sKey, $this->arUserPropertyKeys)) {
                 $arValue = \CBPHelper::UsersStringToArray(
@@ -92,6 +88,10 @@ class Properties
      */
     public function proccessForTask($documentId)
     {
+        if ($this->isProcessedForTask) {
+            return;
+        }
+        $this->isProcessedForTask = true;
         foreach ($this->arValues as $sKey => $arValue) {
             if (in_array($sKey, $this->arUserPropertyKeys)) {
                 $arValue = \CBPHelper::ExtractUsers($arValue, $documentId, false);
@@ -102,7 +102,7 @@ class Properties
 
     public function getArUserIdsByPropertyKey(string $name, $documentId)
     {
-        $obProperties = ($this->isProcessedForTask)? $this : clone $this;
+        $obProperties = ($this->isProcessedForTask) ? $this : clone $this;
         $obProperties->proccessForTask($documentId);
         return $obProperties->{$name};
     }
@@ -113,7 +113,7 @@ class Properties
      */
     public function __get(string $name)
     {
-        if(!isset($this->arValues[$name])) {
+        if (!isset($this->arValues[$name])) {
             return null;
         }
         return $this->arValues[$name];

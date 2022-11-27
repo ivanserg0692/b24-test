@@ -40,7 +40,7 @@ class CBPCommandBuildActivity extends CBPActivity
             $rootActivity = $this->GetRootActivity();
             $documentId = $rootActivity->GetDocumentId();
             $this->arUserStaffIds = $this->obProperties
-                ->getArUserIdsByPropertyKey(Properties::PROPERTY_BOSSES, $documentId);
+                ->getArUserIdsByPropertyKey(Properties::PROPERTY_USERS, $documentId);
         }
         return $this->arUserStaffIds;
     }
