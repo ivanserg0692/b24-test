@@ -13,4 +13,14 @@ $arActivityDescription = array(
     "FILTER" => array(
         'EXCLUDE' => CBPHelper::DISTR_B24
     ),
+    'RETURN' => [
+        'arStaffId' => [
+            'NAME' => 'Исполнители Staff',
+            'TYPE' => 'user'
+        ],
+        'bossId' => [
+            'NAME' => 'Руководитель',
+            'TYPE' => 'user'
+        ]
+    ]
 );

@@ -12,10 +12,16 @@ class CBPCommandBuildActivity extends CBPActivity
 
     const CODE_ACTIVITY = 'CommandBuildActivity';
 
-    protected Properties $obProperties;
+    protected $obProperties;
     protected int $taskId = 0;
     protected array $arUserStaffIds;
     protected array $arUserBossIds;
+
+    public array $arStaffId = [];
+    public int $bossId = 0;
+    protected $taskStatus = false;
+
+    protected $isInEventActivityMode = false;
 
 
     protected function getArUsersIds(): array
@@ -25,7 +31,7 @@ class CBPCommandBuildActivity extends CBPActivity
 
     protected function getArBossIds(): array
     {
-        if(!isset($this->arUserBossIds)) {
+        if (!isset($this->arUserBossIds)) {
             $rootActivity = $this->GetRootActivity();
             $documentId = $rootActivity->GetDocumentId();
             $this->arUserBossIds = $this->obProperties
@@ -36,7 +42,7 @@ class CBPCommandBuildActivity extends CBPActivity
 
     protected function getArStaffIds(): array
     {
-        if(!isset($this->arUserStaffIds)) {
+        if (!isset($this->arUserStaffIds)) {
             $rootActivity = $this->GetRootActivity();
             $documentId = $rootActivity->GetDocumentId();
             $this->arUserStaffIds = $this->obProperties
@@ -45,10 +51,6 @@ class CBPCommandBuildActivity extends CBPActivity
         return $this->arUserStaffIds;
     }
 
-    public function __sleep(): array
-    {
-        return array_diff(array_keys(get_object_vars($this)), ['obProperties']);
-    }
 
     public function __wakeup(): void
     {
@@ -62,13 +64,16 @@ class CBPCommandBuildActivity extends CBPActivity
         $this->obProperties = new Properties;
         $this->arProperties = array("Title" => ""
             ) + $this->obProperties->getArList();
-
     }
 
     public function Execute()
     {
+        if ($this->isInEventActivityMode) {
+            return CBPActivityExecutionStatus::Closed;
+        }
         $this->obProperties->setArValuesByActivity($this);
         $this->Subscribe($this);
+        $this->isInEventActivityMode = false;
         return CBPActivityExecutionStatus::Executing;
     }
 
@@ -151,6 +156,8 @@ class CBPCommandBuildActivity extends CBPActivity
 
     public function HandleFault(Exception $exception)
     {
+        if ($exception == null)
+            throw new Exception('exception');
         $status = $this->cancel();
         if ($status == CBPActivityExecutionStatus::Canceling) {
             return CBPActivityExecutionStatus::Faulting;
@@ -164,6 +171,7 @@ class CBPCommandBuildActivity extends CBPActivity
         $documentService = $runtime->GetService("DocumentService");
         $rootActivity = $this->GetRootActivity();
         $documentId = $rootActivity->GetDocumentId();
+        $this->isInEventActivityMode = true;
 
         /** @var CBPTaskService $taskService */
         $taskService = $this->workflow->GetService("TaskService");
@@ -201,6 +209,8 @@ class CBPCommandBuildActivity extends CBPActivity
             ));
         }
         $this->workflow->RemoveEventHandler($this->name, $eventHandler);
+        $this->taskId = 0;
+        $this->taskStatus = false;
     }
 
     public function OnExternalEvent($arEventParameters = array())
@@ -211,17 +221,17 @@ class CBPCommandBuildActivity extends CBPActivity
         $userId = $USER->GetID();
         $isBoss = in_array($userId, $this->getArBossIds());
         $isStaff = in_array($userId, $this->getArStaffIds());
-        if(!$isBoss && $isStaff) {
+        if (!$isBoss && $isStaff) {
             //just a staff
             $this->onWilParticipate($arEventParameters);
             $taskService = $this->workflow->GetService("TaskService");
             $taskService->MarkCompleted($this->taskId, $arEventParameters["REAL_USER_ID"], CBPTaskStatus::CompleteYes);
-        } elseif($isBoss && $isStaff) {
+        } elseif ($isBoss && $isStaff) {
             //staff and boss
-            if($arEventParameters['WILL_PARTICIPATE']) {
+            if ($arEventParameters['WILL_PARTICIPATE']) {
                 $this->onWilParticipate($arEventParameters);
             }
-            if($arEventParameters['STOP']) {
+            if ($arEventParameters['STOP']) {
                 $this->onStop($arEventParameters);
             }
         } else {
@@ -232,12 +242,24 @@ class CBPCommandBuildActivity extends CBPActivity
 
     protected function onWilParticipate($arEventParameters = array())
     {
+        $this->arStaffId = array_unique(array_merge($this->arStaffId, [intval($arEventParameters["REAL_USER_ID"])]));
         $this->writeToTrackingService("Событие буду участвовать");
     }
 
     protected function onStop($arEventParameters = array())
     {
+        $this->bossId = intval($arEventParameters["REAL_USER_ID"]);
+
+        $taskService = $this->workflow->GetService('TaskService');
+        $taskService->MarkCompleted($this->taskId, $arEventParameters['REAL_USER_ID'], CBPTaskUserStatus::Ok);
+        $this->taskStatus = CBPTaskStatus::CompleteOk;
+        $this->Unsubscribe($this);
+        $this->workflow->CloseActivity($this);
+
+
         $this->writeToTrackingService("Событие остановки");
+
+
     }
 
     public static function PostTaskForm($arTask, $userId, $arRequest, &$arErrors, $userName = "", $realUserId = null)
