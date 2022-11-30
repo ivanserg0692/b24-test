@@ -254,10 +254,10 @@ class CBPCommandBuildActivity extends CBPActivity
     protected function onStop($arEventParameters = array())
     {
         $this->{Properties::PROPERTY_RESULT_BOSS_ID} = 'user_' . intval($arEventParameters["REAL_USER_ID"]);
+        $this->taskStatus = CBPTaskStatus::CompleteYes;
         $this->Unsubscribe($this);
         $this->workflow->CloseActivity($this);
         $this->writeToTrackingService("Событие остановки");
-        $this->taskStatus = CBPTaskStatus::CompleteYes;
     }
 
     public static function PostTaskForm($arTask, $userId, $arRequest, &$arErrors, $userName = "", $realUserId = null)
