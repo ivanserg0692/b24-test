@@ -17,8 +17,6 @@ class CBPCommandBuildActivity extends CBPActivity
     protected array $arUserStaffIds;
     protected array $arUserBossIds;
 
-    public array $arStaffId = [];
-    public int $bossId = 0;
     protected $taskStatus = false;
 
     protected $isInEventActivityMode = false;
@@ -64,6 +62,15 @@ class CBPCommandBuildActivity extends CBPActivity
         $this->obProperties = new Properties;
         $this->arProperties = array("Title" => ""
             ) + $this->obProperties->getArList();
+        $this->setPropertiesTypes([
+            Properties::PROPERTY_RESULT_AR_STAFF_ID => [
+                'Type' => 'user',
+                'Multiple' => true
+            ],
+            Properties::PROPERTY_RESULT_BOSS_ID => [
+                'Type' => 'user',
+            ]
+        ]);
     }
 
     public function Execute()
@@ -146,7 +153,7 @@ class CBPCommandBuildActivity extends CBPActivity
 
     public function Cancel()
     {
-        $this->writeToTrackingService('Задача отменена ' . $this->name);
+        xdebug_break();
         if ($this->taskId > 0) {
             $this->Unsubscribe($this);
         }
@@ -156,6 +163,7 @@ class CBPCommandBuildActivity extends CBPActivity
 
     public function HandleFault(Exception $exception)
     {
+        xdebug_break();
         if ($exception == null)
             throw new Exception('exception');
         $status = $this->cancel();
@@ -198,8 +206,6 @@ class CBPCommandBuildActivity extends CBPActivity
 
     public function Unsubscribe(IBPActivityExternalEventListener $eventHandler)
     {
-
-        $this->writeToTrackingService('Отписка ' . $this->name);
         $taskService = $this->workflow->GetService("TaskService");
         if ($this->taskStatus === false) {
             $taskService->DeleteTask($this->taskId);
@@ -216,16 +222,15 @@ class CBPCommandBuildActivity extends CBPActivity
     public function OnExternalEvent($arEventParameters = array())
     {
         global $USER;
-        $this->taskStatus = CBPTaskStatus::CompleteYes;
         $this->writeToTrackingService('Пользователь ознакомлен');
         $userId = $USER->GetID();
         $isBoss = in_array($userId, $this->getArBossIds());
         $isStaff = in_array($userId, $this->getArStaffIds());
+        $taskService = $this->workflow->GetService("TaskService");
+        $taskService->MarkCompleted($this->taskId, $arEventParameters["REAL_USER_ID"], CBPTaskUserStatus::Ok);
         if (!$isBoss && $isStaff) {
             //just a staff
             $this->onWilParticipate($arEventParameters);
-            $taskService = $this->workflow->GetService("TaskService");
-            $taskService->MarkCompleted($this->taskId, $arEventParameters["REAL_USER_ID"], CBPTaskStatus::CompleteYes);
         } elseif ($isBoss && $isStaff) {
             //staff and boss
             if ($arEventParameters['WILL_PARTICIPATE']) {
@@ -242,35 +247,38 @@ class CBPCommandBuildActivity extends CBPActivity
 
     protected function onWilParticipate($arEventParameters = array())
     {
-        $this->arStaffId = array_unique(array_merge($this->arStaffId, [intval($arEventParameters["REAL_USER_ID"])]));
+        $this->arStaffId = array_unique(array_merge($this->arStaffId, ['user_' . intval($arEventParameters["REAL_USER_ID"])]));
         $this->writeToTrackingService("Событие буду участвовать");
     }
 
     protected function onStop($arEventParameters = array())
     {
-        $this->bossId = intval($arEventParameters["REAL_USER_ID"]);
-
-        $taskService = $this->workflow->GetService('TaskService');
-        $taskService->MarkCompleted($this->taskId, $arEventParameters['REAL_USER_ID'], CBPTaskUserStatus::Ok);
-        $this->taskStatus = CBPTaskStatus::CompleteOk;
+        $this->{Properties::PROPERTY_RESULT_BOSS_ID} = 'user_' . intval($arEventParameters["REAL_USER_ID"]);
         $this->Unsubscribe($this);
         $this->workflow->CloseActivity($this);
-
-
         $this->writeToTrackingService("Событие остановки");
-
-
+        $this->taskStatus = CBPTaskStatus::CompleteYes;
     }
 
     public static function PostTaskForm($arTask, $userId, $arRequest, &$arErrors, $userName = "", $realUserId = null)
     {
-        CBPRuntime::SendExternalEvent($arTask["WORKFLOW_ID"], $arTask["ACTIVITY_NAME"], [
-            "USER_ID" => $userId,
-            "REAL_USER_ID" => $realUserId,
-            "USER_NAME" => $userName,
-            "STOP" => boolval($arRequest['stop']),
-            "WILL_PARTICIPATE" => boolval($arRequest['will-participate']),
-        ]);
+        try {
+
+            $r = \CBPRuntime::SendExternalEvent($arTask["WORKFLOW_ID"], $arTask["ACTIVITY_NAME"], [
+                "USER_ID" => $userId,
+                "REAL_USER_ID" => $realUserId,
+                "USER_NAME" => $userName,
+                "STOP" => isset($arRequest['stop']),
+                "WILL_PARTICIPATE" => isset($arRequest['will']),
+            ]);
+        } catch (\Throwable $exception) {
+            $arErrors[] = array(
+                "code" => $exception->getCode(),
+                "message" => $exception->getMessage(),
+                "file" => $exception->getFile()." [".$exception->getLine()."]",
+            );
+            return false;
+        }
         return true;
     }
 
@@ -290,7 +298,7 @@ class CBPCommandBuildActivity extends CBPActivity
             array(
                 "arResult" => $arTask['PARAMETERS'],
             )
-        );;
+        );
 
         return array($form, $buttons);
     }

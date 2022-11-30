@@ -16,7 +16,8 @@ $arActivityDescription = array(
     'RETURN' => [
         'arStaffId' => [
             'NAME' => 'Исполнители Staff',
-            'TYPE' => 'user'
+            'TYPE' => 'user',
+            'Multiple' => true
         ],
         'bossId' => [
             'NAME' => 'Руководитель',

@@ -15,5 +15,5 @@ $isStaff = in_array($userId, $arResult[Properties::PROPERTY_USERS]);
 <?php if ($isBoss): ?>
     <input type="submit" name="stop" value="Остановить сборку команды" class=" bp-button bp-button-accept" style="border: none">
 <?php elseif ($isStaff): ?>
-    <input type="submit" name="yes" value="Буду участвовать" class=" bp-button bp-button-accept" style="border: none">
+    <input type="submit" name="will" value="Буду участвовать" class=" bp-button bp-button-accept" style="border: none">
 <?php endif; ?>

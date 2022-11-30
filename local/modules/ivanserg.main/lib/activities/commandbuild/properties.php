@@ -11,6 +11,8 @@ class Properties
     const PROPERTY_DESCRIPTION = 'description';
     const PROPERTY_REQUIRED_STAFF_COUNT = 'requiredStaffCount';
     const PROPERTY_BOSSES = 'administrationBoss';
+    const PROPERTY_RESULT_AR_STAFF_ID = 'arStaffId';
+    const PROPERTY_RESULT_BOSS_ID = 'bossId';
 
     protected array $arValues;
     protected array $arErrors;
@@ -28,7 +30,11 @@ class Properties
     {
         $this->arValues = [];
         foreach (array_keys($this->getArList()) as $sPropertyKey) {
-            $this->arValues[$sPropertyKey] = $obActivity->{$sPropertyKey};
+            try {
+                $this->arValues[$sPropertyKey] = $obActivity->{$sPropertyKey};
+            } catch (\Throwable $exception) {
+                continue;
+            }
         }
     }
 
@@ -100,11 +106,11 @@ class Properties
         }
     }
 
-    public function getArUserIdsByPropertyKey(string $name, $documentId)
+    public function getArUserIdsByPropertyKey(string $name, $documentId): array
     {
         $obProperties = ($this->isProcessedForTask) ? $this : clone $this;
         $obProperties->proccessForTask($documentId);
-        return $obProperties->{$name};
+        return $obProperties->{$name} ?: [];
     }
 
     /**
@@ -154,6 +160,9 @@ class Properties
             static::PROPERTY_NAME => '',
             static::PROPERTY_REQUIRED_STAFF_COUNT => 0,
             static::PROPERTY_BOSSES => '',
-            static::PROPERTY_DESCRIPTION => '',];
+            static::PROPERTY_DESCRIPTION => '',
+            static::PROPERTY_RESULT_AR_STAFF_ID => [],
+            static::PROPERTY_RESULT_BOSS_ID => ''
+        ];
     }
 }
