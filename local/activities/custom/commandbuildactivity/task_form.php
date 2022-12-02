@@ -26,7 +26,7 @@ $isComplex = $isBoss && $isStaff;
         Описание:
     </td>
     <td valign="top" width="60%" class="bizproc-field-value">
-        <?= $arResult[Properties::PROPERTY_DESCRIPTION] ?>
+        <?= htmlspecialchars_decode($arResult[Properties::PROPERTY_DESCRIPTION]) ?>
     </td>
 </tr>
 <?php if($isBoss &&
