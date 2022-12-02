@@ -36,3 +36,9 @@ use \Ivanserg\Main\Activities\CommandBuild\Properties;
         <?=CBPDocument::ShowParameterField('user', Properties::PROPERTY_BOSSES, $arCurrentValues[Properties::PROPERTY_BOSSES], array('rows' => 1, 'cols' => 70))?>
     </td>
 </tr>
+<tr>
+    <td align="right" width="40%" valign="top"><span>Текст для руководителей если число участников ниже минимального:</span></td>
+    <td width="60%">
+        <?=CBPDocument::ShowParameterField('string', Properties::PROPERTY_CANT_STOP_TEXT, $arCurrentValues[Properties::PROPERTY_CANT_STOP_TEXT], array('rows' => 10, 'cols' => 70))?>
+    </td>
+</tr>

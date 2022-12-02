@@ -29,6 +29,13 @@ $isComplex = $isBoss && $isStaff;
         <?= $arResult[Properties::PROPERTY_DESCRIPTION] ?>
     </td>
 </tr>
+<?php if($isBoss &&
+    count($arResult[Properties::PROPERTY_RESULT_AR_STAFF_ID]) < $arResult[Properties::PROPERTY_REQUIRED_STAFF_COUNT]): ?>
+    <tr><td valign="top" width="60%" class="bizproc-field-value" colspan="2">
+            <?= $arResult[Properties::PROPERTY_CANT_STOP_TEXT] ?>
+        </td>
+    </tr>
+    <?php endif; ?>
 <?php if($isComplex): ?>
 <tr><td colspan="2"><hr></td></tr>
     <tr>

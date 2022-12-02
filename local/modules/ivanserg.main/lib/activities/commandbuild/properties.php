@@ -11,6 +11,7 @@ class Properties
     const PROPERTY_DESCRIPTION = 'description';
     const PROPERTY_REQUIRED_STAFF_COUNT = 'requiredStaffCount';
     const PROPERTY_BOSSES = 'administrationBoss';
+    const PROPERTY_CANT_STOP_TEXT = 'cantStop';
     const PROPERTY_RESULT_AR_STAFF_ID = 'arStaffId';
     const PROPERTY_RESULT_BOSS_ID = 'bossId';
 
@@ -23,7 +24,10 @@ class Properties
     {
         $this->arErrors = [];
         $this->arValues = [];
-        $this->arUserPropertyKeys = [static::PROPERTY_USERS, static::PROPERTY_BOSSES];
+        $this->arUserPropertyKeys = [
+            static::PROPERTY_USERS, static::PROPERTY_BOSSES,
+            static::PROPERTY_RESULT_AR_STAFF_ID, static::PROPERTY_RESULT_BOSS_ID
+        ];
     }
 
     public function setArValuesByActivity(\CBPCommandBuildActivity $obActivity): void
@@ -100,7 +104,7 @@ class Properties
         $this->isProcessedForTask = true;
         foreach ($this->arValues as $sKey => $arValue) {
             if (in_array($sKey, $this->arUserPropertyKeys)) {
-                $arValue = \CBPHelper::ExtractUsers($arValue, $documentId, false);
+                $arValue = \CBPHelper::ExtractUsers($arValue, $documentId);
             }
             $this->arValues[$sKey] = $arValue;
         }
@@ -161,8 +165,9 @@ class Properties
             static::PROPERTY_REQUIRED_STAFF_COUNT => 0,
             static::PROPERTY_BOSSES => '',
             static::PROPERTY_DESCRIPTION => '',
+            static::PROPERTY_CANT_STOP_TEXT => '',
             static::PROPERTY_RESULT_AR_STAFF_ID => [],
-            static::PROPERTY_RESULT_BOSS_ID => ''
+            static::PROPERTY_RESULT_BOSS_ID => '',
         ];
     }
 }
