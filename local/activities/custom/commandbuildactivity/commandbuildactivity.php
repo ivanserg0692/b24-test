@@ -245,16 +245,19 @@ class CBPCommandBuildActivity extends CBPActivity
             $this->onStop($arEventParameters);
         }
 
-        $arTask = CBPTaskService::GetList(null, [
-            'ID' => $this->taskId
-        ])->Fetch();
+        if($this->taskId) {
+            $arTask = CBPTaskService::GetList(null, [
+                'ID' => $this->taskId
+            ])->Fetch();
 
-        $rootActivity = $this->GetRootActivity();
-        $documentId = $rootActivity->GetDocumentId();
-        $this->obProperties->setArValuesByActivity($this);
-        $this->obProperties->proccessForTask($documentId);
-        $arTask['PARAMETERS'] = $this->obProperties->getArValues();
-        CBPTaskService::Update($this->taskId, $arTask);
+            $rootActivity = $this->GetRootActivity();
+            $documentId = $rootActivity->GetDocumentId();
+            $this->obProperties->setArValuesByActivity($this);
+            $this->obProperties->proccessForTask($documentId);
+            $arTask['PARAMETERS'] = $this->obProperties->getArValues();
+            CBPTaskService::Update($this->taskId, $arTask);
+        }
+
     }
 
     protected function onWilParticipate($arEventParameters = array())
