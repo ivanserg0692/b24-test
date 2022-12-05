@@ -15,5 +15,3 @@ How does it work?
 
 In the next video I wanna show you how it can be configured.
  including: setting users who can be as a staff members, and who can be
- 
-https://www.youtube.com/watch?v=2pWwT_LKxtc
